@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+ 
+ http://www.apache.org/licenses/LICENSE-2.0
+ 
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.0/jquery.mobile-1.3.0.min.css" />
+        <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+        <script src="http://code.jquery.com/mobile/1.3.0/jquery.mobile-1.3.0.min.js"></script>
+    </head>
+    <body>
+        <div class="app">
+            <script>
+                $(document).ajaxError(function(e, xhr, opts, err){
+                                      var status = (xhr || {}).status;
+                                      xhr = null;
+                                      setTimeout(function(){
+                                                 throw(e.type +' | '+ status +' | '+ opts.url);
+                                                 }, 0);
+                                      });
+                function sendAuthRequest(username, password){
+                    $(document).bind("mobileinit", function(){
+                                     $.support.cors = true;
+                                     $.mobile.allowCrossDomainPages = true;
+                                     });
+                    if(username=="" || password=="") {
+                        alert("Logindaten ungültig");
+                    } else {
+                        function createSoapMessage(ITOR_CAT, ILIFECYCLE){
+                            var soapdata = '<?xml version="1.0" encoding="UTF-8"?>'+
+                            '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" ' +
+                            'xmlns:urn="urn:sap-com:document:sap:rfc:functions">' +
+                            '    <soapenv:Header/>' +
+                            '<soapenv:Body>' +
+                            '<urn:Z_APP_XML_EXPORT2>' +
+                            '<ILIFECYCLE>' + ILIFECYCLE + '</ILIFECYCLE>' +
+                            '<ITOR_CAT>' + ITOR_CAT + '</ITOR_CAT>' +
+                            '<TFRACHTAUFTRAG>' +
+                            '<item>' +
+                            '<TOR_ID/>' +
+                            '<TOR_CAT/>' +
+                            '<FINAL_EXEC_EVENT/>' +
+                            '<LIFECYCLE/>' +
+                            '<DELIVERY/>' +
+                            '<CONSIGNEEID/>' +
+                            '</item>' +
+                            '</TFRACHTAUFTRAG>' +
+                            '</urn:Z_APP_XML_EXPORT2>' +
+                            '</soapenv:Body>' +
+                            '</soapenv:Envelope>';
+                            return soapdata;
+                        }
+                        $.ajax({
+                               url: "http://abat-xm9.bremen.abat.de:8000/sap/bc/srt/rfc/sap/z_app_export_frachtauftrag3/001/service/binding",
+                               type: "POST",
+                               data: createSoapMessage(null,null),
+                               username: username,
+                               password: password,
+                               cache: false,
+                               beforeSend: function() {
+                               $.mobile.showPageLoadingMsg();
+                               },
+                               success: function () {
+                               user = username;
+                               pass = password;
+                               //alert("Login OK");
+                               sendSoapRequest("TO", "02");
+                               $.mobile.changePage($(neu));
+                               },
+                               error: function (){
+                               alert("Login fehlgeschlagen.")
+                               },
+                               complete: function(){
+                               $.mobile.hidePageLoadingMsg();
+                               
+                               },
+                               timeout : 5000,
+                               contentType: "text/xml; charset='utf-8'"
+                               });
+                    }
+                }
+                </script>
+            <!-- Start of first page: #one -->
+            <div data-role="page" data-title="Anmeldung" id="login">
+                
+			 	<div align="center">
+					<img src="./img/logo.png" data-role="fieldcontain">
+                        <input type="text" placeholder="Benutzername" name="user"
+							id="user" value="jam" data-clear-btn="true">
+                            <input type="password" placeholder="Passwort"
+                                data-clear-btn="true" value="xmltest" name="password" id="password"	autocomplete="off">
+                                <a href="#" data-role="button" id="login"
+                                    onclick=sendAuthRequest($("#user").val(),$("#password").val())>Anmelden</a>
+                                <a href="#" data-role="button" id="settings" data-icon="gear" data-mini="true">Einstellungen</a>
+                                </div>
+                
+                <!-- /content -->
+            </div>
+            <!-- /page home -->
+            
+            <!-- Start of page #neu -->
+            <div data-role="page" data-title="SAP Transport Management" id="neu">
+                <div data-role="header" data-position="fixed">
+                    <a href="#nav-panel" data-icon="bars" data-iconpos="notext">Panel</a>
+                    <h1>SAP Transport Management</h1>
+                    <a href="#" data-icon="refresh" data-iconpos="notext" onclick=sendSoapRequest("TO","02")>Refresh</a>
+                </div><!-- /header -->
+                <div data-role="content">
+                    <ul data-role="listview" id="transportList" data-inset="true"></ul>
+                    <script>
+                        $.mobile.allowCrossDomainPages = true;
+                        function sendSoapRequest(ITOR_CAT, ILIFECYCLE){
+                            function createSoapMessage(ITOR_CAT, ILIFECYCLE){
+                                var soapdata = '<?xml version="1.0" encoding="UTF-8"?>'+
+                                '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" ' +
+                                'xmlns:urn="urn:sap-com:document:sap:rfc:functions">' +
+                                '    <soapenv:Header/>' +
+                                '<soapenv:Body>' +
+                                '<urn:Z_APP_XML_EXPORT2>' +
+                                '<ILIFECYCLE>' + ILIFECYCLE + '</ILIFECYCLE>' +
+                                '<ITOR_CAT>' + ITOR_CAT + '</ITOR_CAT>' +
+                                '<TFRACHTAUFTRAG>' +
+                                '<item>' +
+                                '<TOR_ID/>' +
+                                '<TOR_CAT/>' +
+                                '<FINAL_EXEC_EVENT/>' +
+                                '<LIFECYCLE/>' +
+                                '<DELIVERY/>' +
+                                '<CONSIGNEEID/>' +
+                                '</item>' +
+                                '</TFRACHTAUFTRAG>' +
+                                '</urn:Z_APP_XML_EXPORT2>' +
+                                '</soapenv:Body>' +
+                                '</soapenv:Envelope>';
+                                return soapdata;
+                            }
+                            $.ajax({
+                                   url: "http://abat-xm9.bremen.abat.de:8000/sap/bc/srt/rfc/sap/z_app_export_frachtauftrag3/001/service/binding",
+                                   type: "POST",
+                                   data: createSoapMessage(ITOR_CAT, ILIFECYCLE),
+                                   username: "jam",
+                                   password: "xmltest",
+                                   cache: false,
+                                   beforeSend: function() {
+                                   $.mobile.showPageLoadingMsg();
+                                   },
+                                   success: function (xml) {
+                                   $("#transportList").empty();
+                                   $("#transportList").append('<li data-role="list-divider">Frachtaufträge</li>');
+                                   $(xml).find("item").each(function () {
+                                                            if($(this).find("TOR_ID").text()!=""){
+                                                            $("#transportList").append('<li data-icon="info">'
+                                                                                       +'<a href="#popup" data-rel="dialog"><h2>Beleg: '
+                                                                                       + $(this).find("TOR_ID").text()
+                                                                                       + '</h2><p>Status: <strong>' + $(this).find("LIFECYCLE").text()
+                                                                                       + '</strong></p><p>' + ""
+                                                                                       + '</p><p class="ui-li-aside">Lieferung: <strong>'
+                                                                                       + $(this).find("DELIVERY").text()
+                                                                                       + '</strong></p></a></li>');
+                                                            $('#transportList').listview('refresh');
+                                                            setTimeout(function(){},100);
+                                                            }
+                                                            });
+                                   var myDate = new Date();
+                                   $("#footer").html('Aktualisiert '+new Date().toLocaleTimeString());
+                                   },
+                                   error: function (){
+                                   $("#footer").html('Keine Daten verfügbar.');
+                                   },
+                                   complete: function(){
+                                   $.mobile.hidePageLoadingMsg();
+                                   
+                                   },
+                                   contentType: "text/xml; charset='utf-8'"
+                                   });
+                        }
+                        $(document).ready(function () {
+                                          });
+                        </script>
+                </div><!-- /content -->
+                <div data-role="footer" data-position="fixed" data-fullscreen="false">
+                    <h4 id="footer"></h4>
+                </div><!-- /footer -->
+                <div data-role="panel" data-position-fixed="true" id="nav-panel">
+                    <ul data-role="listview" class="nav-search">
+                        <li data-icon="back"><a href="#" data-rel="close">Menü schließen</a></li>
+                        <li data-role="list-divider">Frachtaufträge</li>
+                        <li><a href="#panel-fixed-page2">Entwurf</a><span class="ui-li-count">2</span></li>         <!-- Lifecycle 00-->
+                        <li><a href="#panel-fixed-page2">neu</a><span class="ui-li-count">5</span></li>                      <!-- 01 -->
+                        <li><a href="#panel-fixed-page2">in Bearbeitung</a><span class="ui-li-count">2</span></li>           <!-- 02 -->
+                        <li><a href="#panel-fixed-page2">abgeschlossen</a><span class="ui-li-count">22</span></li>           <!-- 05 -->
+                        <li><a href="#panel-fixed-page2">storniert</a><span class="ui-li-count">2</span></li>                <!-- 10 -->
+                        <li><a href="#panel-fixed-page2">alle</a><span class="ui-li-count">33</span></li>                    <!-- ? -->
+                        <li data-role="list-divider">System</li>
+                        <li data-icon="gear"><a href="#panel-fixed-page2">Einstellungen</a></li>
+                        <li data-icon="info"><a href="#panel-fixed-page2">Info</a></li>
+                    </ul>
+                </div><!-- /panel -->
+            </div><!-- /page #neu -->
+        </div>
+        <script type="text/javascript" src="cordova-2.5.0.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript">
+            app.initialize();
+            </script>
+    </body>
+</html>
